@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "705709936353",
+    "project_id": "talktostranger-ed3ac",
+    "storage_bucket": "talktostranger-ed3ac.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:705709936353:android:4144ca9071a9c43aa2b1a0",
+        "android_client_info": {
+          "package_name": "com.talkto.stranger"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "705709936353-f859h4bfk31l9vkt4qe8actbrr4f4u08.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.talkto.stranger",
+            "certificate_hash": "bf3ebd98381b0882558f16a23e7adfb6cbd4a327"
+          }
+        },
+        {
+          "client_id": "705709936353-bmd9npcm5knpokcbkoc8sia699ti8klv.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD7J4b2X1efLzL8-IwqgC5uU6nMnZpHpSQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "705709936353-bmd9npcm5knpokcbkoc8sia699ti8klv.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
