@@ -1,4 +1,4 @@
-package com.example.flutter_webrtc_app
+package com.talkto.stranger
 
 import io.flutter.embedding.android.FlutterActivity
 
