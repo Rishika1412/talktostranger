@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:talktostranger/bloc/auth_bloc.dart';
 import 'package:talktostranger/event/auth_event.dart';
+import 'package:talktostranger/main.dart';
 import 'package:talktostranger/state/auth_state.dart';
 import 'package:talktostranger/views/home_screen.dart';
+
+import 'login_screen.dart';
 
 class AuthenticationScreen extends StatefulWidget {
   const AuthenticationScreen({super.key});
@@ -25,10 +28,10 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
       builder: (context, state) {
         if (state is AuthSignedInState) {
           
-          return HomeScreen(user: state.user);
+          return HomePage(user: state.user);
         } else if (state is AuthNotAuthenticatedState) {
          
-          return const SignInButton();
+          return GoogleLogin();
         } else if (state is AuthErrorState) {
           
           return Center(

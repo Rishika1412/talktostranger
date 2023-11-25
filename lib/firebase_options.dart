@@ -25,10 +25,7 @@ class DefaultFirebaseOptions {
       case TargetPlatform.iOS:
         return ios;
       case TargetPlatform.macOS:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for macos - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return macos;
       case TargetPlatform.windows:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for windows - '
@@ -66,12 +63,23 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyBfyhxPr55NabPYZOYzM3zVQhWI0B_1n7w',
-    appId: '1:705709936353:ios:2a555faf36ceb9caa2b1a0',
+    appId: '1:705709936353:ios:8c028cb667600cfda2b1a0',
     messagingSenderId: '705709936353',
     projectId: 'talktostranger-ed3ac',
     storageBucket: 'talktostranger-ed3ac.appspot.com',
-    androidClientId: '705709936353-dbm9ij8he4aoi0s0ufk1v2l6plna0st6.apps.googleusercontent.com',
-    iosClientId: '705709936353-9dgfc0dsfu2q24varrfrb41unecd2o4c.apps.googleusercontent.com',
-    iosBundleId: 'com.talkto.stranger',
+    androidClientId: '705709936353-f859h4bfk31l9vkt4qe8actbrr4f4u08.apps.googleusercontent.com',
+    iosClientId: '705709936353-j7npjqj91q6dc3bid00ci6vpvva8eqv3.apps.googleusercontent.com',
+    iosBundleId: 'com.example.flutterWebrtcApp',
+  );
+
+  static const FirebaseOptions macos = FirebaseOptions(
+    apiKey: 'AIzaSyBfyhxPr55NabPYZOYzM3zVQhWI0B_1n7w',
+    appId: '1:705709936353:ios:8c028cb667600cfda2b1a0',
+    messagingSenderId: '705709936353',
+    projectId: 'talktostranger-ed3ac',
+    storageBucket: 'talktostranger-ed3ac.appspot.com',
+    androidClientId: '705709936353-f859h4bfk31l9vkt4qe8actbrr4f4u08.apps.googleusercontent.com',
+    iosClientId: '705709936353-j7npjqj91q6dc3bid00ci6vpvva8eqv3.apps.googleusercontent.com',
+    iosBundleId: 'com.example.flutterWebrtcApp',
   );
 }

@@ -1,6 +1,6 @@
 {
-    "name": "freelance",
-    "short_name": "freelance",
+    "name": "flutter_webrtc_app",
+    "short_name": "flutter_webrtc_app",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
