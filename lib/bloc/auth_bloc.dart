@@ -1,6 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:package_info/package_info.dart';
 import 'package:talktostranger/event/auth_event.dart';
 import 'package:talktostranger/state/auth_state.dart';
 
@@ -43,9 +45,24 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(AuthLoadingState());
       try {
         final User? user = _auth.currentUser;
+        final remoteConfig = FirebaseRemoteConfig.instance;
+        await remoteConfig.setConfigSettings(RemoteConfigSettings(
+          fetchTimeout: const Duration(minutes: 1),
+          minimumFetchInterval: const Duration(seconds: 1),
+        ));
+        await remoteConfig.fetch();
+        await remoteConfig.activate();
+        int version = await remoteConfig.getInt('versionCode');
+        PackageInfo packageInfo = await PackageInfo.fromPlatform();
+        int versionCode = int.parse(packageInfo.buildNumber);
+        print('Version code: $version');
 
         if (user != null) {
-          emit(AuthSignedInState(user));
+          if (versionCode == version) {
+            emit(AuthSignedInState(user));
+          } else {
+            emit(NotUpdatedState());
+          }
         } else {
           emit(AuthNotAuthenticatedState());
         }
@@ -53,7 +70,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         emit(AuthErrorState('Error checking authentication status: $error'));
       }
     });
- 
+
     on<SignOutEvent>((event, emit) async {
       try {
         await _auth.signOut();

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -7,6 +8,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_card_swiper/flutter_card_swiper.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:icons_plus/icons_plus.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:talktostranger/bloc/auth_bloc.dart';
@@ -34,12 +36,14 @@ class _HomePageState extends State<HomePage> {
 
   VideoCallManager? _videoCallManager;
   final CardSwiperController controller = CardSwiperController();
-
+  int _numInterstitialLoadAttempts = 0;
+ int maxFailedLoadAttempts = 3;
+bool isCalling=false;
   @override
   void initState() {
     super.initState();
     activateUser();
-
+_createInterstitialAd();
     //OneSignal.User.addTagWithKey("id", FirebaseAuth.instance.currentUser!.uid);
 
     //  _usernameController.text = FirebaseAuth.instance.currentUser!.uid;
@@ -120,7 +124,11 @@ class _HomePageState extends State<HomePage> {
       }
     });
   }
-
+  static final AdRequest request = AdRequest(
+    keywords: <String>['foo', 'bar'],
+    contentUrl: 'http://foo.com/bar.html',
+    nonPersonalizedAds: true,
+  );
   @override
   void dispose() {
     // Close the StreamController when the widget is disposed
@@ -130,6 +138,7 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> addDocumentToCallingCollection(
       String targetUSER, String Caller) async {
+
     try {
       // Access the Firestore instance
       FirebaseFirestore firestore = FirebaseFirestore.instance;
@@ -258,7 +267,68 @@ class _HomePageState extends State<HomePage> {
       print('Error sending notification: $error');
     }
   }
-
+  InterstitialAd? _interstitialAd;
+  void _createInterstitialAd() {
+    InterstitialAd.load(
+        adUnitId: Platform.isAndroid
+            ? 'ca-app-pub-3940256099942544/1033173712'
+            : 'ca-app-pub-3940256099942544/4411468910',
+        request: request,
+        adLoadCallback: InterstitialAdLoadCallback(
+          onAdLoaded: (InterstitialAd ad) {
+            print('$ad loaded');
+            _interstitialAd = ad;
+            _numInterstitialLoadAttempts = 0;
+            _interstitialAd!.setImmersiveMode(true);
+         //   _showInterstitialAd();
+          },
+          onAdFailedToLoad: (LoadAdError error) {
+            print('InterstitialAd failed to load: $error.');
+            _numInterstitialLoadAttempts += 1;
+            _interstitialAd = null;
+            if (_numInterstitialLoadAttempts < maxFailedLoadAttempts) {
+              _createInterstitialAd();
+            }
+          },
+        ));
+  }
+  void _showInterstitialAd(String userName) {
+    if (_interstitialAd == null) {
+      print('Warning: attempt to show interstitial before loaded.');
+      return;
+    }
+    _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
+      onAdShowedFullScreenContent: (InterstitialAd ad) =>
+          addDocumentToCallingCollection(
+              userName.toString(),
+              FirebaseAuth
+                  .instance
+                  .currentUser!
+                  .uid),
+      onAdDismissedFullScreenContent: (InterstitialAd ad) {
+        addDocumentToCallingCollection(
+            userName.toString(),
+            FirebaseAuth
+                .instance
+                .currentUser!
+                .uid);
+        ad.dispose();
+        _createInterstitialAd();
+      },
+      onAdFailedToShowFullScreenContent: (InterstitialAd ad, AdError error) {
+        addDocumentToCallingCollection(
+            userName.toString(),
+            FirebaseAuth
+                .instance
+                .currentUser!
+                .uid);
+        ad.dispose();
+        _createInterstitialAd();
+      },
+    );
+    _interstitialAd!.show();
+    _interstitialAd = null;
+  }
   @override
   Widget build(BuildContext context) {
     return Stack(
@@ -306,7 +376,7 @@ class _HomePageState extends State<HomePage> {
                           // onUndo: _onUndo,
                           numberOfCardsDisplayed: 3,
                           isLoop: true,
-                          backCardOffset: const Offset(0, 10),
+                          backCardOffset: const Offset(2, 18),
                           padding: const EdgeInsets.all(24.0),
                           cardBuilder: (
                             context,
@@ -372,13 +442,18 @@ class _HomePageState extends State<HomePage> {
                                                                     .circular(
                                                                         16.0)),
                                                       ),
-                                                      onPressed: () {
-                                                        addDocumentToCallingCollection(
-                                                            userName.toString(),
-                                                            FirebaseAuth
-                                                                .instance
-                                                                .currentUser!
-                                                                .uid);
+                                                      onPressed: ()async {
+                                                        setState(() {
+                                                          isCalling=true;
+                                                        });
+                                                     _showInterstitialAd(userName!);
+                                                     await Future.delayed(Duration(seconds: 14)).then((value) {
+                                                       setState(() {
+                                                         isCalling=false;
+                                                       });
+                                                     });
+
+
                                                       },
                                                       icon: Icon(Iconsax.call),
                                                       label: Text("Call")),
@@ -507,6 +582,32 @@ class _HomePageState extends State<HomePage> {
             },
           ),
         ),
+        isCalling?SafeArea(
+          child: Column(
+            children: [
+              AlertDialog(
+                backgroundColor: Colors.black,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12.0)),
+                title: Text(
+                  "Ringing Bell.....",
+                  style: TextStyle(color: Colors.white),
+                ),
+                actions: [
+                  TextButton(
+                      onPressed: () async {
+                      setState(() {
+                        isCalling=false;
+                      });
+                      },
+                      child: Text("Cancel",
+                          style: TextStyle(color: Colors.red))),
+
+                ],
+              ),
+            ],
+          ),
+        ):SizedBox(),
       ],
     );
   }

@@ -54,6 +54,12 @@ dependencies:
   onesignal_flutter: ^5.0.3
   http:
   rename: ^3.0.1
+  firebase_analytics:
+  firebase_remote_config:
+  google_mobile_ads: ^3.1.0
+  package_info:
+  url_launcher:
+
 
 
 

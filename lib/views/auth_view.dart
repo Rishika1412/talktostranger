@@ -5,6 +5,7 @@ import 'package:talktostranger/event/auth_event.dart';
 import 'package:talktostranger/main.dart';
 import 'package:talktostranger/state/auth_state.dart';
 import 'package:talktostranger/views/home_screen.dart';
+import 'package:talktostranger/views/update_screen.dart';
 
 import 'login_screen.dart';
 
@@ -32,7 +33,10 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
         } else if (state is AuthNotAuthenticatedState) {
          
           return GoogleLogin();
-        } else if (state is AuthErrorState) {
+        } else if (state is NotUpdatedState) {
+
+          return UpdateScreen();
+        }  else if (state is AuthErrorState) {
           
           return Center(
             child: Text('Error: ${state.error}'),

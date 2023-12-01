@@ -11,6 +11,7 @@ class AuthSignedInState extends AuthState {
 }
 
 class AuthNotAuthenticatedState extends AuthState {}
+class NotUpdatedState extends AuthState {}
 
 class AuthErrorState extends AuthState {
   final String error;
