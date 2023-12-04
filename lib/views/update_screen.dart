@@ -1,12 +1,8 @@
 import 'package:avatar_glow/avatar_glow.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../bloc/auth_bloc.dart';
 import '../animation/delayed_animation.dart';
-import '../event/auth_event.dart';
-import '../terms/terms_and_conditions.dart';
 
 class UpdateScreen extends StatefulWidget {
   @override

@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -37,13 +39,17 @@ class _HomePageState extends State<HomePage> {
   VideoCallManager? _videoCallManager;
   final CardSwiperController controller = CardSwiperController();
   int _numInterstitialLoadAttempts = 0;
- int maxFailedLoadAttempts = 3;
-bool isCalling=false;
+  int _numRewardLoadAttempts = 0;
+  int maxFailedLoadAttempts = 3;
+  int maxVideoFailedLoadAttempts = 3;
+  int noOfCards = 3;
+  bool isCalling = false;
   @override
   void initState() {
     super.initState();
     activateUser();
-_createInterstitialAd();
+    _createInterstitialAd();
+    _createRewardedAd();
     //OneSignal.User.addTagWithKey("id", FirebaseAuth.instance.currentUser!.uid);
 
     //  _usernameController.text = FirebaseAuth.instance.currentUser!.uid;
@@ -124,7 +130,8 @@ _createInterstitialAd();
       }
     });
   }
-  static final AdRequest request = AdRequest(
+
+  static final AdRequest request = const AdRequest(
     keywords: <String>['foo', 'bar'],
     contentUrl: 'http://foo.com/bar.html',
     nonPersonalizedAds: true,
@@ -138,7 +145,6 @@ _createInterstitialAd();
 
   Future<void> addDocumentToCallingCollection(
       String targetUSER, String Caller) async {
-
     try {
       // Access the Firestore instance
       FirebaseFirestore firestore = FirebaseFirestore.instance;
@@ -267,6 +273,7 @@ _createInterstitialAd();
       print('Error sending notification: $error');
     }
   }
+
   InterstitialAd? _interstitialAd;
   void _createInterstitialAd() {
     InterstitialAd.load(
@@ -280,7 +287,7 @@ _createInterstitialAd();
             _interstitialAd = ad;
             _numInterstitialLoadAttempts = 0;
             _interstitialAd!.setImmersiveMode(true);
-         //   _showInterstitialAd();
+            //   _showInterstitialAd();
           },
           onAdFailedToLoad: (LoadAdError error) {
             print('InterstitialAd failed to load: $error.');
@@ -292,6 +299,7 @@ _createInterstitialAd();
           },
         ));
   }
+
   void _showInterstitialAd(String userName) {
     if (_interstitialAd == null) {
       print('Warning: attempt to show interstitial before loaded.');
@@ -300,28 +308,16 @@ _createInterstitialAd();
     _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
       onAdShowedFullScreenContent: (InterstitialAd ad) =>
           addDocumentToCallingCollection(
-              userName.toString(),
-              FirebaseAuth
-                  .instance
-                  .currentUser!
-                  .uid),
+              userName.toString(), FirebaseAuth.instance.currentUser!.uid),
       onAdDismissedFullScreenContent: (InterstitialAd ad) {
         addDocumentToCallingCollection(
-            userName.toString(),
-            FirebaseAuth
-                .instance
-                .currentUser!
-                .uid);
+            userName.toString(), FirebaseAuth.instance.currentUser!.uid);
         ad.dispose();
         _createInterstitialAd();
       },
       onAdFailedToShowFullScreenContent: (InterstitialAd ad, AdError error) {
         addDocumentToCallingCollection(
-            userName.toString(),
-            FirebaseAuth
-                .instance
-                .currentUser!
-                .uid);
+            userName.toString(), FirebaseAuth.instance.currentUser!.uid);
         ad.dispose();
         _createInterstitialAd();
       },
@@ -329,6 +325,65 @@ _createInterstitialAd();
     _interstitialAd!.show();
     _interstitialAd = null;
   }
+
+  RewardedAd? _rewardedAd;
+
+  void _createRewardedAd() {
+    RewardedAd.load(
+      adUnitId: Platform.isAndroid
+          ? 'ca-app-pub-3940256099942544/5224354917'
+          : 'ca-app-pub-3940256099942544/1712485313',
+      request: request,
+      rewardedAdLoadCallback: RewardedAdLoadCallback(
+        onAdLoaded: (RewardedAd ad) {
+          _rewardedAd = ad;
+          _numRewardLoadAttempts = 0;
+          _rewardedAd!.setImmersiveMode(true);
+          print('Rewarded video ad loaded.');
+        },
+        onAdFailedToLoad: (LoadAdError error) {
+          print('Rewarded video ad failed to load: $error');
+          _numRewardLoadAttempts += 1;
+          _rewardedAd = null;
+          if (_numRewardLoadAttempts < maxVideoFailedLoadAttempts) {
+            _createRewardedAd();
+          }
+        },
+      ),
+    );
+  }
+
+  void _showRewardedAd() {
+    if (_rewardedAd == null) {
+      print('Warning: attempt to show rewarded ad before loaded.');
+      return;
+    }
+
+    _rewardedAd!.fullScreenContentCallback = FullScreenContentCallback(
+      onAdShowedFullScreenContent: (RewardedAd ad) =>
+          print('Ad showed fullscreen content.'),
+      onAdDismissedFullScreenContent: (RewardedAd ad) {
+        print('Ad dismissed fullscreen content.');
+        ad.dispose();
+        _createRewardedAd(); // Load a new rewarded ad after it's dismissed
+      },
+      onAdFailedToShowFullScreenContent: (RewardedAd ad, AdError error) {
+        print('Ad failed to show fullscreen content: $error');
+        ad.dispose();
+        _createRewardedAd(); // Load a new rewarded ad after failure
+      },
+      onAdImpression: (RewardedAd ad) => print('Ad impression.'),
+    );
+
+    _rewardedAd!.show(
+        onUserEarnedReward: (AdWithoutView ad, RewardItem reward) {
+      setState(() {
+        noOfCards = noOfCards + 3;
+      });
+    });
+    _rewardedAd = null; // Set to null to prevent showing the same ad again
+  }
+
   @override
   Widget build(BuildContext context) {
     return Stack(
@@ -343,12 +398,16 @@ _createInterstitialAd();
               style: TextStyle(color: Colors.white),
             ),
             actions: [
-              IconButton(onPressed: () async {}, icon: Icon(Iconsax.video)),
+              IconButton(
+                  onPressed: () async {
+                    _showRewardedAd();
+                  },
+                  icon: const Icon(Iconsax.video)),
               IconButton(
                   onPressed: () async {
                     BlocProvider.of<AuthBloc>(context).add(SignOutEvent());
                   },
-                  icon: Icon(Iconsax.logout))
+                  icon: const Icon(Iconsax.logout))
             ],
           ),
           body: Container(
@@ -366,15 +425,15 @@ _createInterstitialAd();
 
                       if (!snapshot.hasData ||
                           snapshot.data!.docs.isEmpty ||
-                          snapshot.data!.docs.length < 2) {
-                        return Center(child: Text('No data available'));
+                          snapshot.data!.docs.length < noOfCards - 1) {
+                        return const Center(child: Text('No data available'));
                       }
                       return CardSwiper(
                           controller: controller,
                           cardsCount: snapshot.data!.docs.length,
                           //onSwipe: _onSwipe,
                           // onUndo: _onUndo,
-                          numberOfCardsDisplayed: 3,
+                          numberOfCardsDisplayed: noOfCards,
                           isLoop: true,
                           backCardOffset: const Offset(2, 18),
                           padding: const EdgeInsets.all(24.0),
@@ -395,7 +454,7 @@ _createInterstitialAd();
 
                             return FirebaseAuth.instance.currentUser!.uid ==
                                     userName
-                                ? SizedBox()
+                                ? const SizedBox()
                                 : Container(
                                     decoration: BoxDecoration(
                                       borderRadius: BorderRadius.circular(18),
@@ -404,7 +463,7 @@ _createInterstitialAd();
                                           color: Colors.grey.withOpacity(0.5),
                                           spreadRadius: 3,
                                           blurRadius: 7,
-                                          offset: Offset(0, 3),
+                                          offset: const Offset(0, 3),
                                         ),
                                       ],
                                     ),
@@ -442,21 +501,31 @@ _createInterstitialAd();
                                                                     .circular(
                                                                         16.0)),
                                                       ),
-                                                      onPressed: ()async {
+                                                      onPressed: () async {
                                                         setState(() {
-                                                          isCalling=true;
+                                                          isCalling = true;
                                                         });
-                                                     _showInterstitialAd(userName!);
-                                                     await Future.delayed(Duration(seconds: 14)).then((value) {
-                                                       setState(() {
-                                                         isCalling=false;
-                                                       });
-                                                     });
-
-
+                                                        if (index ==
+                                                            noOfCards - 1) {
+                                                          _showRewardedAd();
+                                                        } else {
+                                                          _showInterstitialAd(
+                                                              userName!);
+                                                        }
+                                                        await Future.delayed(
+                                                                const Duration(
+                                                                    seconds:
+                                                                        14))
+                                                            .then((value) {
+                                                          setState(() {
+                                                            isCalling = false;
+                                                          });
+                                                        });
                                                       },
-                                                      icon: Icon(Iconsax.call),
-                                                      label: Text("Call")),
+                                                      icon: const Icon(
+                                                          Iconsax.call),
+                                                      label:
+                                                          const Text("Call")),
                                                 ),
                                               ],
                                             ),
@@ -533,11 +602,11 @@ _createInterstitialAd();
             stream: _userStreamController.stream,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return CircularProgressIndicator();
+                return const CircularProgressIndicator();
               } else if (snapshot.hasError) {
                 return Text('Error: ${snapshot.error}');
               } else if (!snapshot.hasData || !snapshot.data!.exists) {
-                return SizedBox();
+                return const SizedBox();
               } else {
                 var userData = snapshot.data!.data()!;
                 // Update your UI using userData
@@ -547,7 +616,7 @@ _createInterstitialAd();
                       backgroundColor: Colors.black,
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12.0)),
-                      title: Text(
+                      title: const Text(
                         "Anonymous is calling...",
                         style: TextStyle(color: Colors.white),
                       ),
@@ -563,7 +632,7 @@ _createInterstitialAd();
                                   .doc(userData['callee'])
                                   .delete();
                             },
-                            child: Text("Reject",
+                            child: const Text("Reject",
                                 style: TextStyle(color: Colors.red))),
                         ElevatedButton(
                             style: ElevatedButton.styleFrom(
@@ -573,7 +642,7 @@ _createInterstitialAd();
                                   userData['caller'],
                                   FirebaseAuth.instance.currentUser!.uid);
                             },
-                            child: Text("Accept"))
+                            child: const Text("Accept"))
                       ],
                     ),
                   ],
@@ -582,32 +651,33 @@ _createInterstitialAd();
             },
           ),
         ),
-        isCalling?SafeArea(
-          child: Column(
-            children: [
-              AlertDialog(
-                backgroundColor: Colors.black,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12.0)),
-                title: Text(
-                  "Ringing Bell.....",
-                  style: TextStyle(color: Colors.white),
+        isCalling
+            ? SafeArea(
+                child: Column(
+                  children: [
+                    AlertDialog(
+                      backgroundColor: Colors.black,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12.0)),
+                      title: const Text(
+                        "Ringing Bell.....",
+                        style: TextStyle(color: Colors.white),
+                      ),
+                      actions: [
+                        TextButton(
+                            onPressed: () async {
+                              setState(() {
+                                isCalling = false;
+                              });
+                            },
+                            child: const Text("Cancel",
+                                style: TextStyle(color: Colors.red))),
+                      ],
+                    ),
+                  ],
                 ),
-                actions: [
-                  TextButton(
-                      onPressed: () async {
-                      setState(() {
-                        isCalling=false;
-                      });
-                      },
-                      child: Text("Cancel",
-                          style: TextStyle(color: Colors.red))),
-
-                ],
-              ),
-            ],
-          ),
-        ):SizedBox(),
+              )
+            : const SizedBox(),
       ],
     );
   }

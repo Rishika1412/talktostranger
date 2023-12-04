@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:talktostranger/bloc/auth_bloc.dart';
 import 'package:talktostranger/event/auth_event.dart';
-import 'package:talktostranger/main.dart';
 import 'package:talktostranger/state/auth_state.dart';
 import 'package:talktostranger/views/home_screen.dart';
 import 'package:talktostranger/views/update_screen.dart';
