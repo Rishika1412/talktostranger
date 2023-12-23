@@ -37,18 +37,16 @@ class _HomePageState extends State<HomePage> {
       StreamController<DocumentSnapshot<Map<String, dynamic>>>();
 
   VideoCallManager? _videoCallManager;
-  final CardSwiperController controller = CardSwiperController();
+  final PageController controller = PageController();
   int _numInterstitialLoadAttempts = 0;
   int _numRewardLoadAttempts = 0;
   int maxFailedLoadAttempts = 3;
   int maxVideoFailedLoadAttempts = 3;
-  int noOfCards = 3;
   bool isCalling = false;
   @override
   void initState() {
     super.initState();
     activateUser();
-    _createInterstitialAd();
     _createRewardedAd();
     //OneSignal.User.addTagWithKey("id", FirebaseAuth.instance.currentUser!.uid);
 
@@ -172,14 +170,30 @@ class _HomePageState extends State<HomePage> {
         'id': FirebaseAuth.instance.currentUser!
             .uid, // Replace with actual caller information
         'incall': false,
-        'imgurl': FirebaseAuth.instance.currentUser!.photoURL
+        'imgurl': FirebaseAuth.instance.currentUser!.photoURL,
+        'online': true,
+        // 'cards': 1
       };
 
       // Add the document to the "calling" collection
       await firestore
           .collection('activeUser')
           .doc(FirebaseAuth.instance.currentUser!.uid)
-          .set(callingData);
+          .update(callingData);
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   SnackBar(
+      //     content: Text('You Earned 1 card for Free!'),
+      //   ),
+      // );
+//       DocumentReference userRef = FirebaseFirestore.instance
+//           .collection('users')
+//           .doc(FirebaseAuth.instance.currentUser!.uid);
+//       DocumentSnapshot documentSnapshot = await userRef.get();
+// print("89898${documentSnapshot.get('cards')}");
+//
+//       if(documentSnapshot.get('cards')==null){
+//         updateNumberOfCardsC(3);
+//       }
 
       print('Document added to "activeUser" collection successfully');
     } catch (e) {
@@ -274,65 +288,42 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  InterstitialAd? _interstitialAd;
-  void _createInterstitialAd() {
-    InterstitialAd.load(
-        adUnitId: Platform.isAndroid
-            ? 'ca-app-pub-3940256099942544/1033173712'
-            : 'ca-app-pub-3940256099942544/4411468910',
-        request: request,
-        adLoadCallback: InterstitialAdLoadCallback(
-          onAdLoaded: (InterstitialAd ad) {
-            print('$ad loaded');
-            _interstitialAd = ad;
-            _numInterstitialLoadAttempts = 0;
-            _interstitialAd!.setImmersiveMode(true);
-            //   _showInterstitialAd();
-          },
-          onAdFailedToLoad: (LoadAdError error) {
-            print('InterstitialAd failed to load: $error.');
-            _numInterstitialLoadAttempts += 1;
-            _interstitialAd = null;
-            if (_numInterstitialLoadAttempts < maxFailedLoadAttempts) {
-              _createInterstitialAd();
-            }
-          },
-        ));
-  }
+  // InterstitialAd? _interstitialAd;
+  // void _createInterstitialAd() {
+  //   InterstitialAd.load(
+  //       adUnitId: Platform.isAndroid
+  //           ? 'ca-app-pub-3940256099942544/1033173712'
+  //           : 'ca-app-pub-3940256099942544/4411468910',
+  //       request: request,
+  //       adLoadCallback: InterstitialAdLoadCallback(
+  //         onAdLoaded: (InterstitialAd ad) {
+  //           print('$ad loaded');
+  //           _interstitialAd = ad;
+  //           _numInterstitialLoadAttempts = 0;
+  //           _interstitialAd!.setImmersiveMode(true);
+  //           //   _showInterstitialAd();
+  //         },
+  //         onAdFailedToLoad: (LoadAdError error) {
+  //           print('InterstitialAd failed to load: $error.');
+  //           _numInterstitialLoadAttempts += 1;
+  //           _interstitialAd = null;
+  //           if (_numInterstitialLoadAttempts < maxFailedLoadAttempts) {
+  //             _createInterstitialAd();
+  //           }
+  //         },
+  //       ));
+  // }
 
-  void _showInterstitialAd(String userName) {
-    if (_interstitialAd == null) {
-      print('Warning: attempt to show interstitial before loaded.');
-      return;
-    }
-    _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
-      onAdShowedFullScreenContent: (InterstitialAd ad) =>
-          addDocumentToCallingCollection(
-              userName.toString(), FirebaseAuth.instance.currentUser!.uid),
-      onAdDismissedFullScreenContent: (InterstitialAd ad) {
-        addDocumentToCallingCollection(
-            userName.toString(), FirebaseAuth.instance.currentUser!.uid);
-        ad.dispose();
-        _createInterstitialAd();
-      },
-      onAdFailedToShowFullScreenContent: (InterstitialAd ad, AdError error) {
-        addDocumentToCallingCollection(
-            userName.toString(), FirebaseAuth.instance.currentUser!.uid);
-        ad.dispose();
-        _createInterstitialAd();
-      },
-    );
-    _interstitialAd!.show();
-    _interstitialAd = null;
+  void _callTarget(String userName) async {
+    addDocumentToCallingCollection(
+        userName.toString(), FirebaseAuth.instance.currentUser!.uid);
   }
 
   RewardedAd? _rewardedAd;
 
   void _createRewardedAd() {
     RewardedAd.load(
-      adUnitId: Platform.isAndroid
-          ? 'ca-app-pub-3940256099942544/5224354917'
-          : 'ca-app-pub-3940256099942544/1712485313',
+      adUnitId: 'ca-app-pub-2547447950247820/7204119868',
       request: request,
       rewardedAdLoadCallback: RewardedAdLoadCallback(
         onAdLoaded: (RewardedAd ad) {
@@ -378,10 +369,51 @@ class _HomePageState extends State<HomePage> {
     _rewardedAd!.show(
         onUserEarnedReward: (AdWithoutView ad, RewardItem reward) {
       setState(() {
-        noOfCards = noOfCards + 3;
+        updateNumberOfCards(int.parse(reward.amount.toString()));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Hurray! You Earned ${reward.amount} cards!'),
+          ),
+        );
+        //  noOfCards = noOfCards + 3;
       });
     });
     _rewardedAd = null; // Set to null to prevent showing the same ad again
+  }
+
+  Future<void> updateNumberOfCards(int newNumberOfCards) async {
+    try {
+      // Get the current user's ID
+      String userId = FirebaseAuth.instance.currentUser!.uid;
+
+      // Reference to the user's document
+      DocumentReference userRef =
+          FirebaseFirestore.instance.collection('activeUser').doc(userId);
+      DocumentSnapshot previousNumber = await userRef.get();
+
+      await userRef
+          .update({'cards': newNumberOfCards + previousNumber.get('cards')});
+    } catch (e) {
+      print('Error updating number of cards: $e');
+    }
+  }
+
+  Future<int> getNumberOfCards() async {
+    try {
+      // Reference to the user's document
+      DocumentReference userRef = FirebaseFirestore.instance
+          .collection('activeUser')
+          .doc(FirebaseAuth.instance.currentUser!.uid);
+      DocumentSnapshot documentSnapshot = await userRef.get();
+
+      int numberOfCards = documentSnapshot.get('cards');
+      print(numberOfCards);
+      // Return the number of cards
+      return numberOfCards;
+    } catch (e) {
+      print('Error getting number of cards: $e');
+      return 0; // Return 0 in case of an error
+    }
   }
 
   @override
@@ -417,32 +449,26 @@ class _HomePageState extends State<HomePage> {
                   child: StreamBuilder(
                     stream: FirebaseFirestore.instance
                         .collection('activeUser')
+                        .where('id',
+                            isNotEqualTo:
+                                FirebaseAuth.instance.currentUser!.uid)
+                        .where('online', isEqualTo: true)
                         .snapshots(),
                     builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
                       if (snapshot.hasError) {
                         return Center(child: Text('Error: ${snapshot.error}'));
                       }
 
-                      if (!snapshot.hasData ||
-                          snapshot.data!.docs.isEmpty ||
-                          snapshot.data!.docs.length < noOfCards - 1) {
+                      if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                         return const Center(child: Text('No data available'));
                       }
-                      return CardSwiper(
+                      return Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: PageView.builder(
                           controller: controller,
-                          cardsCount: snapshot.data!.docs.length,
-                          //onSwipe: _onSwipe,
-                          // onUndo: _onUndo,
-                          numberOfCardsDisplayed: noOfCards,
-                          isLoop: true,
-                          backCardOffset: const Offset(2, 18),
-                          padding: const EdgeInsets.all(24.0),
-                          cardBuilder: (
-                            context,
-                            index,
-                            horizontalThresholdPercentage,
-                            verticalThresholdPercentage,
-                          ) {
+                          scrollDirection: Axis.vertical,
+                          itemCount: snapshot.data!.docs.length,
+                          itemBuilder: (context, index) {
                             DocumentSnapshot document =
                                 snapshot.data!.docs[index];
                             Map<String, dynamic> data =
@@ -452,91 +478,212 @@ class _HomePageState extends State<HomePage> {
                             String? img = data['imgurl'];
                             bool? age = data['incall'];
 
-                            return FirebaseAuth.instance.currentUser!.uid ==
-                                    userName
-                                ? const SizedBox()
-                                : Container(
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(18),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.grey.withOpacity(0.5),
-                                          spreadRadius: 3,
-                                          blurRadius: 7,
-                                          offset: const Offset(0, 3),
-                                        ),
-                                      ],
+                            if (FirebaseAuth.instance.currentUser!.uid ==
+                                userName) {
+                              return const SizedBox(); // Skip the card for the current user
+                            }
+
+                            return Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(18),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.grey.withOpacity(0.5),
+                                    spreadRadius: 3,
+                                    blurRadius: 7,
+                                    offset: const Offset(0, 3),
+                                  ),
+                                ],
+                              ),
+                              child: Card(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(18),
+                                ),
+                                child: Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.all(Radius.circular(12.0)),
+                                      child: CachedNetworkImage(
+                                          imageUrl: img.toString(),fit: BoxFit.fitHeight,height: MediaQuery.of(context).size.height,),
                                     ),
-                                    child: Card(
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(18),
-                                      ),
-                                      child: Stack(
-                                        alignment: Alignment.center,
+                                    ListTile(
+                                      subtitle: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.end,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.end,
                                         children: [
-                                          ClipRRect(
-                                              borderRadius:
-                                                  BorderRadius.circular(12),
-                                              child: CachedNetworkImage(
-                                                  imageUrl: img.toString())),
-                                          // Image.network(img.toString()),
-                                          ListTile(
-                                            subtitle: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.end,
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.end,
-                                              children: [
-                                                Padding(
+                                          age!
+                                              ? Padding(
                                                   padding:
                                                       const EdgeInsets.all(8.0),
                                                   child: ElevatedButton.icon(
-                                                      style: ElevatedButton
-                                                          .styleFrom(
-                                                        backgroundColor:
-                                                            Colors.green,
-                                                        shape: RoundedRectangleBorder(
-                                                            borderRadius:
-                                                                BorderRadius
-                                                                    .circular(
-                                                                        16.0)),
+                                                    style: ElevatedButton
+                                                        .styleFrom(
+                                                      backgroundColor:
+                                                          Colors.orange,
+                                                      shape:
+                                                          RoundedRectangleBorder(
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(16.0),
                                                       ),
-                                                      onPressed: () async {
+                                                    ),
+                                                    onPressed: () async {
+                                                      int numberOfCards =
+                                                          await getNumberOfCards();
+
+                                                      if (numberOfCards == 0) {
+                                                        showDialog(
+                                                          context: context,
+                                                          builder: (BuildContext
+                                                              context) {
+                                                            return AlertDialog(
+                                                              title: Text(
+                                                                  "Watch Video Ads"),
+                                                              content: Text(
+                                                                  "You don't have enough cards to call. Watch Video ad to earn 3 cards."),
+                                                              actions: [
+                                                                TextButton(
+                                                                  onPressed:
+                                                                      () {
+                                                                    // Close the dialog
+                                                                    Navigator.of(
+                                                                            context)
+                                                                        .pop();
+                                                                  },
+                                                                  child: Text(
+                                                                      'Cancel'),
+                                                                ),
+                                                                TextButton(
+                                                                  onPressed:
+                                                                      () {
+                                                                    Navigator.of(
+                                                                            context)
+                                                                        .pop();
+                                                                    _showRewardedAd();
+                                                                  },
+                                                                  child: Text(
+                                                                      'Watch Ad'),
+                                                                ),
+                                                              ],
+                                                            );
+                                                          },
+                                                        );
+                                                      } else {
                                                         setState(() {
                                                           isCalling = true;
                                                         });
-                                                        if (index ==
-                                                            noOfCards - 1) {
-                                                          _showRewardedAd();
-                                                        } else {
-                                                          _showInterstitialAd(
-                                                              userName!);
-                                                        }
+                                                        _callTarget(userName!);
                                                         await Future.delayed(
                                                                 const Duration(
                                                                     seconds:
                                                                         14))
-                                                            .then((value) {
-                                                          setState(() {
-                                                            isCalling = false;
-                                                          });
+                                                            .then(
+                                                          (value) {
+                                                            setState(() {
+                                                              isCalling = false;
+                                                            });
+                                                          },
+                                                        );
+                                                      }
+                                                    },
+                                                    icon: const Icon(
+                                                        Icons.ac_unit),
+                                                    label: const Text("Busy"),
+                                                  ),
+                                                )
+                                              : Padding(
+                                                  padding:
+                                                      const EdgeInsets.all(8.0),
+                                                  child: ElevatedButton.icon(
+                                                    style: ElevatedButton
+                                                        .styleFrom(
+                                                      backgroundColor:
+                                                          Colors.green,
+                                                      shape:
+                                                          RoundedRectangleBorder(
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(16.0),
+                                                      ),
+                                                    ),
+                                                    onPressed: () async {
+                                                      int numberOfCards =
+                                                          await getNumberOfCards();
+
+                                                      if (numberOfCards == 0) {
+                                                        showDialog(
+                                                          context: context,
+                                                          builder: (BuildContext
+                                                              context) {
+                                                            return AlertDialog(
+                                                              title: Text(
+                                                                  "Watch Video Ads"),
+                                                              content: Text(
+                                                                  "You don't have enough cards to call. Watch Video ad to earn 3 cards."),
+                                                              actions: [
+                                                                TextButton(
+                                                                  onPressed:
+                                                                      () {
+                                                                    // Close the dialog
+                                                                    Navigator.of(
+                                                                            context)
+                                                                        .pop();
+                                                                  },
+                                                                  child: Text(
+                                                                      'Cancel'),
+                                                                ),
+                                                                TextButton(
+                                                                  onPressed:
+                                                                      () {
+                                                                    Navigator.of(
+                                                                            context)
+                                                                        .pop();
+                                                                    _showRewardedAd();
+                                                                  },
+                                                                  child: Text(
+                                                                      'Watch Ad'),
+                                                                ),
+                                                              ],
+                                                            );
+                                                          },
+                                                        );
+                                                      } else {
+                                                        setState(() {
+                                                          isCalling = true;
                                                         });
-                                                      },
-                                                      icon: const Icon(
-                                                          Iconsax.call),
-                                                      label:
-                                                          const Text("Call")),
+                                                        _callTarget(userName!);
+                                                        await Future.delayed(
+                                                                const Duration(
+                                                                    seconds:
+                                                                        14))
+                                                            .then(
+                                                          (value) {
+                                                            setState(() {
+                                                              isCalling = false;
+                                                            });
+                                                          },
+                                                        );
+                                                      }
+                                                    },
+                                                    icon:
+                                                        const Icon(Icons.call),
+                                                    label: const Text("Call"),
+                                                  ),
                                                 ),
-                                              ],
-                                            ),
-                                          ),
                                         ],
                                       ),
                                     ),
-                                  );
-                          }
-//  cards[index],
-                          );
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      );
+
                       // return ListView.builder(
                       //   itemCount: snapshot.data!.docs.length,
                       //   itemBuilder: (context, index) {

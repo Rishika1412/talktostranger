@@ -5,35 +5,15 @@ description: A new Flutter project.
 publish_to: 'none' 
 
 
-
-
-
-
-
-
-
-
-
-
-
 version: 1.0.0+1
 
 environment:
   sdk: '>=2.19.2 <3.0.0'
 
-
-
-
-
-
-
 dependencies:
   flutter:
     sdk: flutter
 
-
-  
-  
   cupertino_icons: ^1.0.2
   flutter_webrtc: ^0.9.34 
   web_socket_channel: ^2.4.0
@@ -59,31 +39,19 @@ dependencies:
   google_mobile_ads: ^3.1.0
   package_info:
   url_launcher:
-
-
-
+  socket_io_client: ^2.0.3+1
+  connectivity:
 
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
 
-  
-  
-  
-  
-  
   flutter_lints: ^2.0.0
-
-
-
 
 
 flutter:
 
-  
-  
-  
   uses-material-design: true
 
   

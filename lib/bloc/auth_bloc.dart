@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -35,6 +36,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             await _auth.signInWithCredential(credential);
         final User user = userCredential.user!;
 
+        updateNumberOfCards(1);
         emit(AuthSignedInState(user));
       } catch (error) {
         emit(AuthErrorState('Sign-in failed: $error'));
@@ -80,4 +82,21 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       }
     });
   }
-}
+  Future<void> updateNumberOfCards(int newNumberOfCards) async {
+    try {
+
+      print("Working R");
+      // Get the current user's ID
+      String userId = FirebaseAuth.instance.currentUser!.uid;
+
+      // Reference to the user's document
+      DocumentReference userRef =
+      FirebaseFirestore.instance.collection('activeUser').doc(userId);
+
+
+      await userRef
+          .set({'cards': 1});
+    } catch (e) {
+      print('Error updating number of cards: $e');
+    }
+  }}

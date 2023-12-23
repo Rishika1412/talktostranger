@@ -33,6 +33,10 @@ class _VideoCallState extends State<VideoCall> with WidgetsBindingObserver {
             : Future.delayed(Duration(seconds: 3), () {
                 _startCall();
               }));
+
+    Future.delayed(Duration(minutes: 15), () {
+      _endCall();
+    });
   }
 
   void _handleData(String data) {
@@ -107,11 +111,21 @@ class _VideoCallState extends State<VideoCall> with WidgetsBindingObserver {
       FirebaseFirestore firestore = FirebaseFirestore.instance;
 
       // Define the data to be added to the document
-      Map<String, dynamic> callingData = {
-        'id': FirebaseAuth.instance.currentUser!
-            .uid, // Replace with actual caller information
-        'incall': true
-      };
+      Map<String, dynamic> callingData;
+      if (!widget.caller) {
+        callingData = {
+          'id': FirebaseAuth.instance.currentUser!
+              .uid, // Replace with actual caller information
+          'incall': true,
+        };
+      } else {
+        callingData = {
+          'id': FirebaseAuth.instance.currentUser!
+              .uid, // Replace with actual caller information
+          'incall': true,
+          'cards': FieldValue.increment(-1)
+        };
+      }
 
       // Add the document to the "calling" collection
       await firestore
@@ -282,6 +296,7 @@ class _VideoCallState extends State<VideoCall> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // This method is called when the app's lifecycle state changes
     if (state == AppLifecycleState.paused) {
+      print(FirebaseAuth.instance.currentUser!.uid);
       // The app is being paused, you can call deleteDB or perform other tasks
       deleteDB();
     }
